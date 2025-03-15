@@ -1,0 +1,9 @@
+{
+    "id": "obsidian-dual-pane-file-manager",
+    "name": "Dual Pane File Manager",
+    "version": "1.0.0",
+    "minAppVersion": "0.15.0",
+    "description": "File manager dengan tampilan dua pane untuk mengelola folder dan file.",
+    "author": "Your Name",
+    "isDesktopOnly": false
+} 

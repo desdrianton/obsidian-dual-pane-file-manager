@@ -1,0 +1,46 @@
+# Node.js dependencies
+node_modules/
+
+# Build output
+dist/
+main.js
+*.js.map
+
+# Development environment
+.vscode/
+.idea/
+*.iml
+
+# Operating System
+.DS_Store
+Thumbs.db
+
+# Obsidian
+.obsidian/
+data.json
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional: rollup.js default build output
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional: TypeScript cache
+*.tsbuildinfo 
