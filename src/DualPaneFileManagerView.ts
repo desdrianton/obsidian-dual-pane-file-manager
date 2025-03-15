@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, TFolder, TFile, Menu, Notice, Modal, App } from 'obsidian';
+import { ItemView, WorkspaceLeaf, TFolder, TFile, Menu, Notice, Modal, App, setIcon } from 'obsidian';
 import { DualPaneFileManagerSettings } from './DualPaneFileManagerSettings';
 
 export class DualPaneFileManagerView extends ItemView {
@@ -400,6 +400,45 @@ export class DualPaneFileManagerView extends ItemView {
         const headerSpan = header.createSpan();
         headerSpan.setText(folder.path === '/' ? 'Root' : folder.name);
         
+        // Tambahkan tombol untuk membuat file baru
+        const newFileButton = header.createEl('button', {
+            cls: 'clickable-icon new-file-button',
+            attr: { 'aria-label': 'Note Baru' }
+        });
+        setIcon(newFileButton, 'file-plus');
+        
+        newFileButton.addEventListener('click', async () => {
+            try {
+                // Buat nama file otomatis dengan format: YYYYMMDD-HHmmss
+                const now = new Date();
+                const fileName = [
+                    now.getFullYear(),
+                    String(now.getMonth() + 1).padStart(2, '0'),
+                    String(now.getDate()).padStart(2, '0'),
+                    '-',
+                    String(now.getHours()).padStart(2, '0'),
+                    String(now.getMinutes()).padStart(2, '0'),
+                    String(now.getSeconds()).padStart(2, '0'),
+                    '.md'
+                ].join('');
+                
+                const filePath = folder.path === '/' ? fileName : `${folder.path}/${fileName}`;
+                
+                // Buat note baru tanpa template
+                const newFile = await this.app.vault.create(filePath, '');
+                
+                // Buka note baru di editor
+                const leaf = this.app.workspace.getLeaf(true);
+                await leaf.openFile(newFile);
+                this.app.workspace.setActiveLeaf(leaf, true);
+                
+                this.displayFolderContents(folder);
+                new Notice(`Note baru dibuat`);
+            } catch (error) {
+                new Notice(`Gagal membuat note: ${error.message}`);
+            }
+        });
+        
         // Container untuk file-file
         const fileContainer = this.filePane.createDiv('file-container');
         
@@ -409,17 +448,70 @@ export class DualPaneFileManagerView extends ItemView {
                 const nameSpan = fileEl.createSpan();
                 nameSpan.setText(child.name);
                 
+                // Event listener untuk klik kiri (buka file)
                 fileEl.addEventListener('click', async () => {
-                    // Membuat tab baru di area utama
                     const leaf = this.app.workspace.getMostRecentLeaf();
                     if (leaf && !leaf.getViewState().pinned) {
                         await leaf.openFile(child);
                     } else {
-                        // Jika tidak ada tab yang tersedia atau semua tab terpinned, buat tab baru
                         const newLeaf = this.app.workspace.getLeaf(true);
                         await newLeaf.openFile(child);
                         this.app.workspace.setActiveLeaf(newLeaf, true);
                     }
+                });
+                
+                // Event listener untuk klik kanan (context menu)
+                fileEl.addEventListener('contextmenu', (e: MouseEvent) => {
+                    e.preventDefault();
+                    const menu = new Menu();
+                    
+                    // Opsi untuk rename file
+                    menu.addItem((item) => {
+                        item
+                            .setTitle("Rename File")
+                            .setIcon("pencil")
+                            .onClick(async () => {
+                                const newName = await this.promptForName(
+                                    "Masukkan nama baru:",
+                                    child.name
+                                );
+                                if (newName && newName !== child.name) {
+                                    try {
+                                        const newPath = folder.path === '/' 
+                                            ? newName 
+                                            : `${folder.path}/${newName}`;
+                                        await this.app.vault.rename(child, newPath);
+                                        this.displayFolderContents(folder);
+                                        new Notice(`File berhasil direname ke "${newName}"`);
+                                    } catch (error) {
+                                        new Notice(`Gagal merename file: ${error.message}`);
+                                    }
+                                }
+                            });
+                    });
+                    
+                    // Opsi untuk menghapus file
+                    menu.addItem((item) => {
+                        item
+                            .setTitle("Hapus File")
+                            .setIcon("trash")
+                            .onClick(async () => {
+                                const confirmed = await this.confirmDialog(
+                                    `Apakah Anda yakin ingin menghapus file "${child.name}"?`
+                                );
+                                if (confirmed) {
+                                    try {
+                                        await this.app.vault.delete(child);
+                                        this.displayFolderContents(folder);
+                                        new Notice(`File "${child.name}" berhasil dihapus`);
+                                    } catch (error) {
+                                        new Notice(`Gagal menghapus file: ${error.message}`);
+                                    }
+                                }
+                            });
+                    });
+                    
+                    menu.showAtMouseEvent(e);
                 });
             }
         });
@@ -428,6 +520,44 @@ export class DualPaneFileManagerView extends ItemView {
     private async showFolderContextMenu(e: MouseEvent, folder: TFolder) {
         e.preventDefault();
         const menu = new Menu();
+
+        // Opsi untuk membuat note baru
+        menu.addItem((item) => {
+            item
+                .setTitle("Note Baru")
+                .setIcon("file-plus")
+                .onClick(async () => {
+                    try {
+                        // Buat nama file otomatis dengan format: YYYYMMDD-HHmmss
+                        const now = new Date();
+                        const fileName = [
+                            now.getFullYear(),
+                            String(now.getMonth() + 1).padStart(2, '0'),
+                            String(now.getDate()).padStart(2, '0'),
+                            '-',
+                            String(now.getHours()).padStart(2, '0'),
+                            String(now.getMinutes()).padStart(2, '0'),
+                            String(now.getSeconds()).padStart(2, '0'),
+                            '.md'
+                        ].join('');
+                        
+                        const filePath = folder.path === '/' ? fileName : `${folder.path}/${fileName}`;
+                        
+                        // Buat note baru tanpa template
+                        const newFile = await this.app.vault.create(filePath, '');
+                        
+                        // Buka note baru di editor
+                        const leaf = this.app.workspace.getLeaf(true);
+                        await leaf.openFile(newFile);
+                        this.app.workspace.setActiveLeaf(leaf, true);
+                        
+                        this.displayFolderContents(folder);
+                        new Notice(`Note baru dibuat`);
+                    } catch (error) {
+                        new Notice(`Gagal membuat note: ${error.message}`);
+                    }
+                });
+        });
 
         // Opsi untuk membuat folder baru
         menu.addItem((item) => {

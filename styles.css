@@ -23,6 +23,38 @@
     border-bottom: 1px solid var(--background-modifier-border);
     display: flex;
     align-items: center;
+    justify-content: space-between;
+}
+
+.new-file-button {
+    width: 24px;
+    height: 24px;
+    opacity: 0.8;
+    margin-left: 4px;
+}
+
+.new-file-button:hover {
+    opacity: 1;
+    color: var(--text-normal);
+    background-color: var(--background-modifier-hover);
+}
+
+.file-pane-header button.clickable-icon {
+    padding: 4px;
+    border-radius: 4px;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.1s ease;
+}
+
+.file-pane-header button.clickable-icon:hover {
+    color: var(--text-normal);
+    background-color: var(--background-modifier-hover);
 }
 
 .file-container {
@@ -130,8 +162,18 @@
 .file-item {
     display: flex;
     align-items: center;
-    min-width: 0;
-    width: 100%;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+}
+
+.file-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.file-item.selected {
+    background-color: var(--background-modifier-active);
 }
 
 .file-item::before {
