@@ -72,6 +72,13 @@
     background-color: transparent;
 }
 
+.file-item {
+    padding: 5px 8px;
+    cursor: pointer;
+    font-size: 12px;
+    background-color: transparent;
+}
+
 .folder-header, .file-item {
     padding: 2px 4px;
     border-radius: 4px;
@@ -134,14 +141,6 @@
 .folder-toggle.expanded::after {
     content: '▼';
 }
-
-/* .folder-content {
-    flex: 1;
-    min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-} */
 
 .folder-content {
     display: flex;
