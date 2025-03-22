@@ -123,13 +123,7 @@ export class DualPaneFileManagerView extends ItemView {
                 if (!currentFolder) return;
 
                 // Refresh file pane jika file dimodifikasi di folder yang aktif
-                if (currentFolder.path === '/') {
-                    // Jika root folder aktif, refresh jika file dimodifikasi di root
-                    if (!file.parent || file.parent.path === '/') {
-                        this.displayFolderContents(currentFolder);
-                    }
-                } else if (file.parent?.path === currentFolder.path) {
-                    // Untuk folder lain, refresh jika file dimodifikasi di folder tersebut
+                if (file.parent?.path === currentFolder.path) {
                     this.displayFolderContents(currentFolder);
                 }
             })
