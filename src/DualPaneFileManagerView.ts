@@ -315,11 +315,14 @@ export class DualPaneFileManagerView extends ItemView {
             menu.showAtMouseEvent(e);
         });
 
-        // Tampilkan folder-folder di root
-        rootFolder.children.forEach((child: TFolder | TFile) => {
-            if (child instanceof TFolder) {
-                this.displayFolder(child, rootSubFoldersContainer, 1);
-            }
+        // Kumpulkan dan urutkan folder-folder di root
+        const folders = rootFolder.children
+            .filter((child): child is TFolder => child instanceof TFolder)
+            .sort((a, b) => a.name.localeCompare(b.name));
+
+        // Tampilkan folder yang sudah diurutkan
+        folders.forEach((child: TFolder) => {
+            this.displayFolder(child, rootSubFoldersContainer, 1);
         });
 
         // Expand root node secara default
@@ -384,11 +387,14 @@ export class DualPaneFileManagerView extends ItemView {
             this.showFolderContextMenu(e, folder);
         });
 
-        // Menampilkan subfolder secara rekursif
-        folder.children.forEach((child: TFolder | TFile) => {
-            if (child instanceof TFolder) {
-                this.displayFolder(child, subFoldersContainer, level + 1);
-            }
+        // Kumpulkan dan urutkan subfolder
+        const subFolders = folder.children
+            .filter((child): child is TFolder => child instanceof TFolder)
+            .sort((a, b) => a.name.localeCompare(b.name));
+
+        // Tampilkan subfolder yang sudah diurutkan
+        subFolders.forEach((child: TFolder) => {
+            this.displayFolder(child, subFoldersContainer, level + 1);
         });
     }
 
@@ -442,89 +448,122 @@ export class DualPaneFileManagerView extends ItemView {
         // Container untuk file-file
         const fileContainer = this.filePane.createDiv('file-container');
         
-        folder.children.forEach((child: TFolder | TFile) => {
-            if (child instanceof TFile) {
-                const fileEl = fileContainer.createDiv('file-item');
-                const nameSpan = fileEl.createSpan();
-                nameSpan.setText(child.name);
+        // Kumpulkan semua file dan urutkan berdasarkan nama
+        const files = folder.children
+            .filter((child): child is TFile => child instanceof TFile)
+            .sort((a, b) => a.name.localeCompare(b.name));
+        
+        // Tampilkan file yang sudah diurutkan
+        files.forEach((child: TFile) => {
+            const fileEl = fileContainer.createDiv('file-item');
+            const nameSpan = fileEl.createSpan();
+            nameSpan.setText(child.name);
+            
+            // Event listener untuk klik kiri (buka file)
+            fileEl.addEventListener('click', async (e: MouseEvent) => {
+                // Cek apakah tombol Ctrl/Cmd ditekan
+                const isCtrlPressed = e.ctrlKey || e.metaKey;
                 
-                // Event listener untuk klik kiri (buka file)
-                fileEl.addEventListener('click', async (e: MouseEvent) => {
-                    // Cek apakah tombol Ctrl/Cmd ditekan
-                    const isCtrlPressed = e.ctrlKey || e.metaKey;
-                    
-                    if (isCtrlPressed) {
-                        // Buka di tab baru jika Ctrl/Cmd ditekan
+                if (isCtrlPressed) {
+                    // Buka di tab baru jika Ctrl/Cmd ditekan
+                    const newLeaf = this.app.workspace.getLeaf(true);
+                    await newLeaf.openFile(child);
+                    this.app.workspace.setActiveLeaf(newLeaf, true);
+                } else {
+                    // Buka di tab yang ada jika tidak ada Ctrl/Cmd
+                    const leaf = this.app.workspace.getMostRecentLeaf();
+                    if (leaf && !leaf.getViewState().pinned) {
+                        await leaf.openFile(child);
+                    } else {
                         const newLeaf = this.app.workspace.getLeaf(true);
                         await newLeaf.openFile(child);
                         this.app.workspace.setActiveLeaf(newLeaf, true);
-                    } else {
-                        // Buka di tab yang ada jika tidak ada Ctrl/Cmd
-                        const leaf = this.app.workspace.getMostRecentLeaf();
-                        if (leaf && !leaf.getViewState().pinned) {
-                            await leaf.openFile(child);
-                        } else {
-                            const newLeaf = this.app.workspace.getLeaf(true);
-                            await newLeaf.openFile(child);
-                            this.app.workspace.setActiveLeaf(newLeaf, true);
-                        }
                     }
+                }
+            });
+            
+            // Event listener untuk klik kanan (context menu)
+            fileEl.addEventListener('contextmenu', (e: MouseEvent) => {
+                e.preventDefault();
+                const menu = new Menu();
+                
+                // Opsi untuk duplicate file
+                menu.addItem((item) => {
+                    item
+                        .setTitle("Duplicate File")
+                        .setIcon("copy")
+                        .onClick(async () => {
+                            try {
+                                // Buat nama file duplikat dengan menambahkan " (copy)" sebelum ekstensi
+                                const fileName = child.name;
+                                const fileExt = fileName.substring(fileName.lastIndexOf('.'));
+                                const baseName = fileName.substring(0, fileName.lastIndexOf('.'));
+                                const newName = `${baseName} (copy)${fileExt}`;
+                                
+                                const newPath = folder.path === '/' 
+                                    ? newName 
+                                    : `${folder.path}/${newName}`;
+                                
+                                // Salin konten file
+                                const content = await this.app.vault.read(child);
+                                await this.app.vault.create(newPath, content);
+                                
+                                this.displayFolderContents(folder);
+                                new Notice(`File berhasil diduplikasi`);
+                            } catch (error) {
+                                new Notice(`Gagal menduplikasi file: ${error.message}`);
+                            }
+                        });
                 });
                 
-                // Event listener untuk klik kanan (context menu)
-                fileEl.addEventListener('contextmenu', (e: MouseEvent) => {
-                    e.preventDefault();
-                    const menu = new Menu();
-                    
-                    // Opsi untuk rename file
-                    menu.addItem((item) => {
-                        item
-                            .setTitle("Rename File")
-                            .setIcon("pencil")
-                            .onClick(async () => {
-                                const newName = await this.promptForName(
-                                    "Masukkan nama baru:",
-                                    child.name
-                                );
-                                if (newName && newName !== child.name) {
-                                    try {
-                                        const newPath = folder.path === '/' 
-                                            ? newName 
-                                            : `${folder.path}/${newName}`;
-                                        await this.app.vault.rename(child, newPath);
-                                        this.displayFolderContents(folder);
-                                        new Notice(`File berhasil direname ke "${newName}"`);
-                                    } catch (error) {
-                                        new Notice(`Gagal merename file: ${error.message}`);
-                                    }
+                // Opsi untuk rename file
+                menu.addItem((item) => {
+                    item
+                        .setTitle("Rename File")
+                        .setIcon("pencil")
+                        .onClick(async () => {
+                            const newName = await this.promptForName(
+                                "Masukkan nama baru:",
+                                child.name
+                            );
+                            if (newName && newName !== child.name) {
+                                try {
+                                    const newPath = folder.path === '/' 
+                                        ? newName 
+                                        : `${folder.path}/${newName}`;
+                                    await this.app.vault.rename(child, newPath);
+                                    this.displayFolderContents(folder);
+                                    new Notice(`File berhasil direname ke "${newName}"`);
+                                } catch (error) {
+                                    new Notice(`Gagal merename file: ${error.message}`);
                                 }
-                            });
-                    });
-                    
-                    // Opsi untuk menghapus file
-                    menu.addItem((item) => {
-                        item
-                            .setTitle("Hapus File")
-                            .setIcon("trash")
-                            .onClick(async () => {
-                                const confirmed = await this.confirmDialog(
-                                    `Apakah Anda yakin ingin menghapus file "${child.name}"?`
-                                );
-                                if (confirmed) {
-                                    try {
-                                        await this.app.vault.delete(child);
-                                        this.displayFolderContents(folder);
-                                        new Notice(`File "${child.name}" berhasil dihapus`);
-                                    } catch (error) {
-                                        new Notice(`Gagal menghapus file: ${error.message}`);
-                                    }
-                                }
-                            });
-                    });
-                    
-                    menu.showAtMouseEvent(e);
+                            }
+                        });
                 });
-            }
+                
+                // Opsi untuk menghapus file
+                menu.addItem((item) => {
+                    item
+                        .setTitle("Hapus File")
+                        .setIcon("trash")
+                        .onClick(async () => {
+                            const confirmed = await this.confirmDialog(
+                                `Apakah Anda yakin ingin menghapus file "${child.name}"?`
+                            );
+                            if (confirmed) {
+                                try {
+                                    await this.app.vault.delete(child);
+                                    this.displayFolderContents(folder);
+                                    new Notice(`File "${child.name}" berhasil dihapus`);
+                                } catch (error) {
+                                    new Notice(`Gagal menghapus file: ${error.message}`);
+                                }
+                            }
+                        });
+                });
+                
+                menu.showAtMouseEvent(e);
+            });
         });
     }
 
