@@ -6,8 +6,8 @@
 
 .folder-pane, .file-pane {
     overflow-y: auto;
-    background-color: var(--background-secondary);
-    padding: 4px;
+    background-color: transparent;
+    padding: 1px;
 }
 
 .file-pane {
@@ -24,6 +24,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    background-color: transparent;
 }
 
 .new-file-button {
@@ -31,6 +32,7 @@
     height: 24px;
     opacity: 0.8;
     margin-left: 4px;
+    background-color: transparent;
 }
 
 .new-file-button:hover {
@@ -60,18 +62,21 @@
 .file-container {
     flex: 1;
     overflow-y: auto;
+    background-color: transparent;
 }
 
 .folder-item, .file-item {
     padding: 3px 8px;
     cursor: pointer;
     font-size: 12px;
+    background-color: transparent;
 }
 
 .folder-header, .file-item {
     padding: 2px 4px;
     border-radius: 4px;
     transition: background-color 0.1s ease;
+    background-color: transparent;
 }
 
 .folder-header:hover, .file-item:hover {
@@ -130,6 +135,14 @@
     content: '▼';
 }
 
+/* .folder-content {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+} */
+
 .folder-content {
     display: flex;
     align-items: center;
@@ -156,7 +169,7 @@
 }
 
 .subfolder-container {
-    margin-left: 10px;
+    margin-left: 12px;
 }
 
 .file-item {
