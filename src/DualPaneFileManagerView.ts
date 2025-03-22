@@ -23,6 +23,10 @@ export class DualPaneFileManagerView extends ItemView {
         return 'File Manager Dua Pane';
     }
 
+    getIcon(): string {
+        return 'folder';
+    }
+
     async onOpen() {
         const container = this.containerEl.children[1] as HTMLElement;
         container.empty();
