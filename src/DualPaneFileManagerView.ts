@@ -449,14 +449,25 @@ export class DualPaneFileManagerView extends ItemView {
                 nameSpan.setText(child.name);
                 
                 // Event listener untuk klik kiri (buka file)
-                fileEl.addEventListener('click', async () => {
-                    const leaf = this.app.workspace.getMostRecentLeaf();
-                    if (leaf && !leaf.getViewState().pinned) {
-                        await leaf.openFile(child);
-                    } else {
+                fileEl.addEventListener('click', async (e: MouseEvent) => {
+                    // Cek apakah tombol Ctrl/Cmd ditekan
+                    const isCtrlPressed = e.ctrlKey || e.metaKey;
+                    
+                    if (isCtrlPressed) {
+                        // Buka di tab baru jika Ctrl/Cmd ditekan
                         const newLeaf = this.app.workspace.getLeaf(true);
                         await newLeaf.openFile(child);
                         this.app.workspace.setActiveLeaf(newLeaf, true);
+                    } else {
+                        // Buka di tab yang ada jika tidak ada Ctrl/Cmd
+                        const leaf = this.app.workspace.getMostRecentLeaf();
+                        if (leaf && !leaf.getViewState().pinned) {
+                            await leaf.openFile(child);
+                        } else {
+                            const newLeaf = this.app.workspace.getLeaf(true);
+                            await newLeaf.openFile(child);
+                            this.app.workspace.setActiveLeaf(newLeaf, true);
+                        }
                     }
                 });
                 
